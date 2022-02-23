@@ -17,43 +17,60 @@ class Student{
 	InternetStackHelper stack;
 	Ipv4AddressHelper address;
 	Ipv4InterfaceContainer interface;
+	ApplicationContainer app;
 	CsmaHelper csma;
-    	Student(int number){
+    	Student(int number, int datarate, int delay){
     		node.Create(number);
     		stack.Install(node);
     		devices = csma.Install(node);
+			void setip(nethost, netmask);
+			void setcsma(datarate, delay);
+			void setrecvport(number);
+			void setsentport(number);
+
+    		
+    	};
+		void Student::setcsma(int datarate, int delay){
+			//set csma
+			csma.SetChannelAttribute ("DataRate", DataRateValue (DataRate (datarate)));
+  			csma.SetChannelAttribute ("Delay", TimeValue (MilliSeconds (delay)));
+		}
+
+		void Student::setip(string nethost, string netmask){
 			//set IPV4
     		address.SetBase (Ipv4Address(nethost.c_str()), Ipv4Mask(netmask.c_str()));
     		interface = address.Assign(devices);
-			//set csma
-			csma.SetChannelAttribute ("DataRate", DataRateValue (DataRate (5000000)));
-  			csma.SetChannelAttribute ("Delay", TimeValue (MilliSeconds (2)));
-			//set onoff
+		}
+		
+		void Student::setsentport(int amount){
 			OnOffHelper onoff ("ns3::UdpSocketFactory", Address (InetSocketAddress (Ipv4Address ("255.255.255.255"), port)));
 			onoff.SetConstantRate (DataRate ("500kb/s"));
-			ApplicationContainer app = onoff.Install (node.Get (0));
-			app.Add (onoff.Install (node.Get (1)));
-			// Start the application
-			app.Start (Seconds (1.0));
-			app.Stop (Seconds (10.0));
-
-    		// Create an optional packet sink to receive these packets
-  			PacketSinkHelper sink ("ns3::UdpSocketFactory",
-            Address (InetSocketAddress (Ipv4Address::GetAny (), port)));
-			app = sink.Install (node.Get (2));
-			for (int i = 3; i < 5; i++)
-			{
-				app.Add (sink.Install (node.Get (i)));
+			for (int node_id = 0; node_id < amount; node_id++) {
+  				app.Add (onoff.Install (node.Get (node_id)));)
 			}
-			app.Start (Seconds (1.0));
-  			app.Stop (Seconds (10.0));
-    	};
+			setstartstoptime(1, 10);
+		}
+
+		void Student::time(float start, float stop){
+			app.Start (Seconds (start));
+			app.Stop (Seconds (stop));
+		}
+
+		void Student::setrecvport(int amount){
+			PacketSinkHelper sink ("ns3::UdpSocketFactory",
+            Address (InetSocketAddress (Ipv4Address::GetAny (), port)));
+			for (int node_id = 0; node_id < amount; node_id++) {
+			app = sink.Install (node.Get (node_id));
+			}
+			setstartstoptime(1, 2);
+
+		}
 	uint16_t port = 9;
 };
 
 
 int main(int argc, char *argv[]){
-    Student(5);
+    Student(5, 5000000, 2);
     AnimationInterface anim ("project.xml");
     Simulator::Run ();
     Simulator::Destroy ();

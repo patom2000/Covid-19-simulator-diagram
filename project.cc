@@ -20,6 +20,10 @@ class member{
 	ApplicationContainer app;
 	CsmaHelper csma;
 	MobilityHelper mobility;
+	// int nodeSpeed = 20;
+    // int nodePause = 0;
+    // int64_t streamIndex = 0;
+    // ObjectFactory pos;
 	
     	member(int amount, int datarate, int delay){
     		node.Create(amount);
@@ -28,8 +32,9 @@ class member{
 			setip(nethost, netmask);
 			setcsma(datarate, delay);
 			setposition(node);
-			/*setrecvport(amount);
-			setsentport(amount);*/
+			setrecvport(amount);
+			setsentport(amount);
+			
 			
     		 
     	};
@@ -47,10 +52,8 @@ class member{
 		
 		void setsentport(int amount){
 			OnOffHelper onoff ("ns3::UdpSocketFactory", Address (InetSocketAddress (Ipv4Address ("255.255.255.255"), port)));
-			onoff.SetConstantRate (DataRate ("500kb/s"));
-			for (int node_id = 0; node_id < amount; node_id++) {
-  				app.Add (onoff.Install (node.Get (node_id)));
-			}
+			onoff.SetConstantRate (DataRate ("5kb/s"));
+  			app.Add (onoff.Install (node.Get (49)));
 			time(1, 20);
 		}
 
@@ -76,24 +79,32 @@ class member{
 					<< ", z=" << pos.z << "; VEL:" << vel.x << ", y=" << vel.y
 					<< ", z=" << vel.z << std::endl;
 		}
-		void move(NodeContainer c, int amount){
-			
-			/*for (int node_id = 0; node_id < amount; node_id++) {
-			app = sink.Install (node.Get (node_id));
-			}*/
-			mobility.SetPositionAllocator ("ns3::PositionAllocator",
-                                 "X", StringValue ("100.0"),
-                                 "Y", StringValue ("100.0"),
-                                 "Rho", StringValue ("ns3::UniformRandomVariable[Min=0|Max=100]"));
-  			mobility.SetMobilityModel ("ns3::RandomWalk2dMobilityModel",
-                             "Mode", StringValue ("Time"),
-                             "Time", StringValue ("2s"),
-                             "Speed", StringValue ("ns3::ConstantRandomVariable[Constant=1.0]"),
-                             "Bounds", StringValue ("0|200|0|200"));
-  			mobility.Install (c);
-			
-  			Config::Connect ("/NodeList/*/$ns3::MobilityModel/CourseChange", MakeCallback (&CourseChange));
-		
+		void move(NodeContainer c, uint32_t node_id){	
+		// pos.SetTypeId ("ns3::RandomRectanglePositionAllocator");
+        // pos.Set ("X", StringValue ("ns3::UniformRandomVariable[Min=0.0|Max=100.0]"));
+        // pos.Set ("Y", StringValue ("ns3::UniformRandomVariable[Min=0.0|Max=100.0]"));
+
+        // Ptr<PositionAllocator> nowPosition = pos.Create ()->GetObject<PositionAllocator> ();
+        // streamIndex += nowPosition->AssignStreams (streamIndex);
+
+        // std::stringstream rSpeed;
+        // rSpeed << "ns3::UniformRandomVariable[Min=0.0|Max=" << nodeSpeed << "]";
+        // std::stringstream rPause;
+        // rPause << "ns3::ConstantRandomVariable[Constant=" << nodePause << "]";
+        // mobility.SetMobilityModel ("ns3::RandomWaypointMobilityModel",
+        //                           "Speed", StringValue (rSpeed.str ()),
+        //                           "Pause", StringValue (rPause.str ()),
+        //                           "PositionAllocator", PointerValue (nowPosition));
+        // mobility.SetPositionAllocator (nowPosition);
+        
+ 
+        // mobility.SetPositionAllocator ("ns3::RandomBoxPositionAllocator",
+        // "X", StringValue ("ns3::UniformRandomVariable[Min=0|Max=108]"),
+        // "Y", StringValue ("ns3::UniformRandomVariable[Min=0|Max=160]"),
+        // "Z", StringValue ("ns3::UniformRandomVariable[Min=0|Max=100]"));
+        // mobility.Install (c.Get(node_id));
+        // streamIndex += mobility.AssignStreams (c, streamIndex);
+        // NS_UNUSED (streamIndex);
 		}
 		void setposition(NodeContainer c){
 			float x = 4;
@@ -126,7 +137,17 @@ class member{
 			Ptr<ListPositionAllocator> positionAlloc = CreateObject<ListPositionAllocator> ();
   			positionAlloc->Add (Vector (x, y, 0.0));
   			mobility.SetPositionAllocator (positionAlloc);
-  			mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
+            mobility.SetMobilityModel ("ns3::GaussMarkovMobilityModel",
+            "Bounds", BoxValue (Box (0, 10.8, 0, 16, 0, 10)),
+            "TimeStep", TimeValue (Seconds (0.5)),
+            "Alpha", DoubleValue (0.85),
+            "MeanVelocity", StringValue ("ns3::UniformRandomVariable[Min=1|Max=2]"),
+            "MeanDirection", StringValue ("ns3::UniformRandomVariable[Min=0|Max=3]"),
+            "MeanPitch", StringValue ("ns3::UniformRandomVariable[Min=0.05|Max=0.05]"),
+            "NormalVelocity", StringValue ("ns3::NormalRandomVariable[Mean=0.0|Variance=0.0|Bound=0.0]"),
+            "NormalDirection", StringValue ("ns3::NormalRandomVariable[Mean=0.0|Variance=0.2|Bound=0.4]"),
+            "NormalPitch", StringValue ("ns3::NormalRandomVariable[Mean=0.0|Variance=0.02|Bound=0.04]"));
+  			// mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
   			mobility.Install (c.Get(node_id));
 		}
 		void movetorackserver(){
@@ -143,7 +164,7 @@ class member{
 int main(int argc, char *argv[]){
     member(50, 5000000, 2);
 	Simulator::Stop (Seconds (20.0));
-    AnimationInterface anim ("project.xml");
+    AnimationInterface anim ("project_2.xml");
     Simulator::Run ();
     Simulator::Destroy ();
 }

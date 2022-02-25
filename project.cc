@@ -4,7 +4,8 @@
 #include "ns3/internet-module.h"
 #include "ns3/mobility-module.h"
 #include "ns3/netanim-module.h"
-
+#include<string>
+#include <map>
 using namespace ns3;
 using namespace std;
 
@@ -20,6 +21,8 @@ class member{
 	ApplicationContainer app;
 	CsmaHelper csma;
 	MobilityHelper mobility;
+	map<string, int> inner;
+	map<int, map> nodeAttribute;
 	// int nodeSpeed = 20;
     // int nodePause = 0;
     // int64_t streamIndex = 0;
@@ -67,9 +70,17 @@ class member{
             Address (InetSocketAddress (Ipv4Address::GetAny (), port)));
 			for (int node_id = 0; node_id < amount; node_id++) {
 			app = sink.Install (node.Get (node_id));
+			(*sink)->SetRecvCallback (MakeCallback (&ReceivePacket));
 			}
 			Time(1, 20);
 
+		}
+		void ReceivePacket (Ptr<Socket> socket)
+		{
+			while (socket->Recv ())
+				{
+				NS_LOG_UNCOND ("Received one packet!");
+				}
 		}
 		static void CourseChange (std::string context, Ptr<const MobilityModel> mobility)
 		{
@@ -153,7 +164,9 @@ class member{
 		void protocol(NodeContainer c){
 
 		}
-
+		void SetNodeAttribute(){
+			
+		}
 		
 	uint16_t port = 9;
 };

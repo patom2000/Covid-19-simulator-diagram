@@ -177,7 +177,7 @@ class member{
   			
 		}
 		void movetorackserver(){
-
+      
 		}
 
 		void movetostayhere(){
@@ -191,6 +191,11 @@ int main(int argc, char *argv[]){
     member(50, 5000000, 2);
 	Simulator::Stop (Seconds (20.0));
     AnimationInterface anim ("project_2.xml");
+    for (uint32_t i = 0; i < 50; i++)
+    {
+      anim.UpdateNodeSize(i, 0.2, 0.2);
+    }
+    
     Simulator::Run ();
     Simulator::Destroy ();
 }

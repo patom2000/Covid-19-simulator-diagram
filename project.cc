@@ -22,7 +22,7 @@ class member{
 	CsmaHelper csma;
 	MobilityHelper mobility;
 	map<string, int> inner;
-	map<int, map> nodeAttribute;
+	map<int, inner> nodeAttribute;
 	// int nodeSpeed = 20;
     // int nodePause = 0;
     // int64_t streamIndex = 0;

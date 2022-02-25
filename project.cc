@@ -32,8 +32,8 @@ class member{
 			setip(nethost, netmask);
 			setcsma(datarate, delay);
 			setposition(node);
-			setrecvport(amount);
-			setsentport(amount);
+			// setrecvport(amount);
+			// setsentport(amount);
 			
 			
     		 
@@ -134,21 +134,47 @@ class member{
   			
 		}
 		void addnode(NodeContainer c, float x, float y, uint32_t node_id){
-			Ptr<ListPositionAllocator> positionAlloc = CreateObject<ListPositionAllocator> ();
-  			positionAlloc->Add (Vector (x, y, 0.0));
-  			mobility.SetPositionAllocator (positionAlloc);
-            mobility.SetMobilityModel ("ns3::GaussMarkovMobilityModel",
-            "Bounds", BoxValue (Box (0, 10.8, 0, 16, 0, 10)),
-            "TimeStep", TimeValue (Seconds (0.5)),
-            "Alpha", DoubleValue (0.85),
-            "MeanVelocity", StringValue ("ns3::UniformRandomVariable[Min=1|Max=2]"),
-            "MeanDirection", StringValue ("ns3::UniformRandomVariable[Min=0|Max=3]"),
-            "MeanPitch", StringValue ("ns3::UniformRandomVariable[Min=0.05|Max=0.05]"),
-            "NormalVelocity", StringValue ("ns3::NormalRandomVariable[Mean=0.0|Variance=0.0|Bound=0.0]"),
-            "NormalDirection", StringValue ("ns3::NormalRandomVariable[Mean=0.0|Variance=0.2|Bound=0.4]"),
-            "NormalPitch", StringValue ("ns3::NormalRandomVariable[Mean=0.0|Variance=0.02|Bound=0.04]"));
+			// Ptr<ListPositionAllocator> positionAlloc = CreateObject<ListPositionAllocator> ();
+  			// positionAlloc->Add (Vector (x, y, 0.0));
+  			// mobility.SetPositionAllocator (positionAlloc);
+            // mobility.SetMobilityModel ("ns3::GaussMarkovMobilityModel",
+            // "Bounds", BoxValue (Box (0, 16, 0, 10.8, 0, 10)),
+            // "TimeStep", TimeValue (Seconds (0.5)),
+            // "Alpha", DoubleValue (0.85),
+            // "MeanVelocity", StringValue ("ns3::UniformRandomVariable[Min=1|Max=2]"),
+            // "MeanDirection", StringValue ("ns3::UniformRandomVariable[Min=0|Max=3]"),
+            // "MeanPitch", StringValue ("ns3::UniformRandomVariable[Min=0.05|Max=0.05]"),
+            // "NormalVelocity", StringValue ("ns3::NormalRandomVariable[Mean=0.0|Variance=0.0|Bound=0.0]"),
+            // "NormalDirection", StringValue ("ns3::NormalRandomVariable[Mean=0.0|Variance=0.2|Bound=0.4]"),
+            // "NormalPitch", StringValue ("ns3::NormalRandomVariable[Mean=0.0|Variance=0.02|Bound=0.04]"));
+			mobility.SetMobilityModel ("ns3::WaypointMobilityModel");
+			mobility.Install (c.Get(node_id));
+  			Ptr<WaypointMobilityModel> wayMobility;
+
+  			wayMobility = c.Get(node_id)->GetObject<WaypointMobilityModel>();
+
+  			Waypoint waypointStart(Seconds(0), Vector3D(x, y, 0));
+  			Waypoint waypointEnd(Seconds(4.9), Vector3D(x-0.5, y+1, 0));
+
+  			wayMobility->AddWaypoint(waypointStart);
+  			wayMobility->AddWaypoint(waypointEnd);
+
+  			Waypoint waypointStart1(Seconds(6), Vector3D(x-0.5, y+1, 0));
+  			Waypoint waypointEnd1(Seconds(9.9), Vector3D(10, 8, 0));
+
+		  	wayMobility->AddWaypoint(waypointStart1);
+  			wayMobility->AddWaypoint(waypointEnd1);
+
+			Waypoint waypointStart2(Seconds(10), Vector3D(10, 8, 0));
+  			Waypoint waypointEnd2(Seconds(15), Vector3D(x, y, 0));
+
+		  	wayMobility->AddWaypoint(waypointStart2);
+  			wayMobility->AddWaypoint(waypointEnd2);
+			
+			
+   			//Nodes.Get(numberOfnodes)->AggregateObject(nodesWaypointMobility);
   			// mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
-  			mobility.Install (c.Get(node_id));
+  			
 		}
 		void movetorackserver(){
 

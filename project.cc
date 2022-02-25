@@ -29,46 +29,46 @@ class member{
     		node.Create(amount);
     		stack.Install(node);
     		devices = csma.Install(node);
-			setip(nethost, netmask);
-			setcsma(datarate, delay);
-			setposition(node);
-			setrecvport(amount);
-			setsentport(amount);
+			Setip(nethost, netmask);
+			Setcsma(datarate, delay);
+			Setposition(node);
+			Setrecvport(amount);
+			Setsentport(amount);
 			
 			
     		 
     	};
-		void setcsma(int datarate, int delay){
+		void Setcsma(int datarate, int delay){
 			//set csma
 			csma.SetChannelAttribute ("DataRate", DataRateValue (DataRate (datarate)));
   			csma.SetChannelAttribute ("Delay", TimeValue (MilliSeconds (delay)));
 		}
 
-		void setip(string nethost, string netmask){
+		void Setip(string nethost, string netmask){
 			//set IPV4
     		address.SetBase (Ipv4Address(nethost.c_str()), Ipv4Mask(netmask.c_str()));
     		interface = address.Assign(devices);
 		}
 		
-		void setsentport(int amount){
+		void Setsentport(int amount){
 			OnOffHelper onoff ("ns3::UdpSocketFactory", Address (InetSocketAddress (Ipv4Address ("255.255.255.255"), port)));
 			onoff.SetConstantRate (DataRate ("5kb/s"));
   			app.Add (onoff.Install (node.Get (49)));
-			time(1, 20);
+			Time(1, 20);
 		}
 
-		void time(float start, float stop){
+		void Time(float start, float stop){
 			app.Start (Seconds (start));
 			app.Stop (Seconds (stop));
 		}
 
-		void setrecvport(int amount){
+		void Setrecvport(int amount){
 			PacketSinkHelper sink ("ns3::UdpSocketFactory",
             Address (InetSocketAddress (Ipv4Address::GetAny (), port)));
 			for (int node_id = 0; node_id < amount; node_id++) {
 			app = sink.Install (node.Get (node_id));
 			}
-			time(1, 20);
+			Time(1, 20);
 
 		}
 		static void CourseChange (std::string context, Ptr<const MobilityModel> mobility)
@@ -79,7 +79,7 @@ class member{
 					<< ", z=" << pos.z << "; VEL:" << vel.x << ", y=" << vel.y
 					<< ", z=" << vel.z << std::endl;
 		}
-		void move(NodeContainer c, uint32_t node_id){	
+		void Move(NodeContainer c, uint32_t node_id){	
 		// pos.SetTypeId ("ns3::RandomRectanglePositionAllocator");
         // pos.Set ("X", StringValue ("ns3::UniformRandomVariable[Min=0.0|Max=100.0]"));
         // pos.Set ("Y", StringValue ("ns3::UniformRandomVariable[Min=0.0|Max=100.0]"));
@@ -106,7 +106,7 @@ class member{
         // streamIndex += mobility.AssignStreams (c, streamIndex);
         // NS_UNUSED (streamIndex);
 		}
-		void setposition(NodeContainer c){
+		void Setposition(NodeContainer c){
 			float x = 4;
 			float y = 1.35;
   			for (int col = 0; col < 6; col++) {
@@ -114,11 +114,11 @@ class member{
 					uint32_t node_id = (col*9) + row;
 					
 					if(49 <= ((col*9)+row) ){
-						addnode(c, 0.7, 5, node_id);
+						Addnode(c, 0.7, 5, node_id);
 						break;
 					}
 					else{
-						addnode(c, x, y, node_id);
+						Addnode(c, x, y, node_id);
 						if((row+1) % 3 == 0){
 							y += 1.15;
 						}
@@ -133,7 +133,7 @@ class member{
 			
   			
 		}
-		void addnode(NodeContainer c, float x, float y, uint32_t node_id){
+		void Addnode(NodeContainer c, float x, float y, uint32_t node_id){
 			Ptr<ListPositionAllocator> positionAlloc = CreateObject<ListPositionAllocator> ();
   			positionAlloc->Add (Vector (x, y, 0.0));
   			mobility.SetPositionAllocator (positionAlloc);
@@ -150,13 +150,7 @@ class member{
   			// mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
   			mobility.Install (c.Get(node_id));
 		}
-		void movetorackserver(){
-
-		}
-
-		void movetostayhere(){
-
-		}
+		
 	uint16_t port = 9;
 };
 

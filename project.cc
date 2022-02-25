@@ -12,7 +12,8 @@ class member{
     string nethost = "192.168.1.0";
     string netmask  = "255.255.255.0";
     public:
-    	NodeContainer node;
+	TypeId tid;
+    NodeContainer node;
 	NetDeviceContainer devices;
 	InternetStackHelper stack;
 	Ipv4AddressHelper address;
@@ -34,13 +35,21 @@ class member{
 			Setposition(node);
 			Setrecvport(amount);
 			Setsentport(amount);
+			TypeId::LookupByName ("ns3::UdpSocketFactory");
+  			for (int n = 0; n < amount; n++)
+			{
+    			Ptr<Socket> recvSink = Socket::CreateSocket (node.Get(n), tid);
+    			InetSocketAddress local = InetSocketAddress (Ipv4Address::GetAny (), 80);
+    			recvSink->Bind (local);
+    			recvSink->SetRecvCallback(MakeCallback (&member::test));
+  }
 			
 			
     		 
     	};
-		void test(Ptr<const Packet> packet)
+		void test(Ptr<Socket> socket)
 		{
-			NS_LOG_UNCOND(packet);
+			NS_LOG_UNCOND(socket->Recv ());
 		};
 		void Setcsma(int datarate, int delay){
 			//set csma
@@ -71,9 +80,6 @@ class member{
             Address (InetSocketAddress (Ipv4Address::GetAny (), port)));
 			for (int node_id = 0; node_id < amount; node_id++) {
 			app = sink.Install (node.Get (node_id));
-			}
-			for (i = device.Begin (); i != device.End (); ++i) {
-    		(*i)->MakeCallback (&member::test, this);
 			}
 			Time(1, 20);
 

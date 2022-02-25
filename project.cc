@@ -38,6 +38,10 @@ class member{
 			
     		 
     	};
+		test(Ptr<const Packet> packet)
+		{
+			NS_LOG_UNCOND(packet);
+		};
 		void Setcsma(int datarate, int delay){
 			//set csma
 			csma.SetChannelAttribute ("DataRate", DataRateValue (DataRate (datarate)));
@@ -67,6 +71,7 @@ class member{
             Address (InetSocketAddress (Ipv4Address::GetAny (), port)));
 			for (int node_id = 0; node_id < amount; node_id++) {
 			app = sink.Install (node.Get (node_id));
+			node.Get(node_id)->MakeCallback (&Member::test, this);
 			}
 			Time(1, 20);
 

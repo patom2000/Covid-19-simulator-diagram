@@ -4,161 +4,260 @@
 #include "ns3/internet-module.h"
 #include "ns3/mobility-module.h"
 #include "ns3/netanim-module.h"
+#include <stdlib.h>
+#include <cmath>
 
 using namespace ns3;
 using namespace std;
 
-class member{
-    string nethost = "192.168.1.0";
-    string netmask  = "255.255.255.0";
-    public:
-    	NodeContainer node;
-	NetDeviceContainer devices;
-	InternetStackHelper stack;
-	Ipv4AddressHelper address;
-	Ipv4InterfaceContainer interface;
-	ApplicationContainer app;
-	CsmaHelper csma;
-	MobilityHelper mobility;
-	// int nodeSpeed = 20;
-    // int nodePause = 0;
-    // int64_t streamIndex = 0;
-    // ObjectFactory pos;
-	
-    	member(int amount, int datarate, int delay){
-    		node.Create(amount);
-    		stack.Install(node);
-    		devices = csma.Install(node);
-			Setip(nethost, netmask);
-			Setcsma(datarate, delay);
-			Setposition(node);
-			Setrecvport(amount);
-			Setsentport(amount);
-			
-			
-    		 
-    	};
-		void Setcsma(int datarate, int delay){
-			//set csma
-			csma.SetChannelAttribute ("DataRate", DataRateValue (DataRate (datarate)));
-  			csma.SetChannelAttribute ("Delay", TimeValue (MilliSeconds (delay)));
-		}
+class member
+{
+  string nethost = "192.168.1.0";
+  string netmask = "255.255.255.0";
 
-		void Setip(string nethost, string netmask){
-			//set IPV4
-    		address.SetBase (Ipv4Address(nethost.c_str()), Ipv4Mask(netmask.c_str()));
-    		interface = address.Assign(devices);
-		}
-		
-		void Setsentport(int amount){
-			OnOffHelper onoff ("ns3::UdpSocketFactory", Address (InetSocketAddress (Ipv4Address ("255.255.255.255"), port)));
-			onoff.SetConstantRate (DataRate ("5kb/s"));
-  			app.Add (onoff.Install (node.Get (49)));
-			Time(1, 20);
-		}
+public:
+  NodeContainer node;
+  NetDeviceContainer devices;
+  InternetStackHelper stack;
+  Ipv4AddressHelper address;
+  Ipv4InterfaceContainer interface;
+  ApplicationContainer app;
+  CsmaHelper csma;
+  MobilityHelper mobility;
+  TypeId tid = TypeId::LookupByName ("ns3::UdpSocketFactory");
+  
+  member (int amount, int datarate, int delay)
+  {
+    node.Create (amount);
+    stack.Install (node);
+    devices = csma.Install (node);
+    setip (nethost, netmask);
+    setcsma (datarate, delay);
+    setposition (node);
+    setrecvport(amount);
+    setsentport();
+    
+  };
+  void test (Ptr<Socket> socket)
+{
+  while (socket->Recv ())
+    {
+      NS_LOG_UNCOND ("Received one packet!");
+    }
+}
+  void
+  setcsma (int datarate, int delay)
+  {
+    // set csma
+    csma.SetChannelAttribute ("DataRate", DataRateValue (DataRate (datarate)));
+    csma.SetChannelAttribute ("Delay", TimeValue (MilliSeconds (delay)));
+  }
 
-		void Time(float start, float stop){
-			app.Start (Seconds (start));
-			app.Stop (Seconds (stop));
-		}
+  void
+  setip (string nethost, string netmask)
+  {
+    // set IPV4
+    address.SetBase (Ipv4Address (nethost.c_str ()), Ipv4Mask (netmask.c_str ()));
+    interface = address.Assign (devices);
+  }
 
-		void Setrecvport(int amount){
-			PacketSinkHelper sink ("ns3::UdpSocketFactory",
-            Address (InetSocketAddress (Ipv4Address::GetAny (), port)));
-			for (int node_id = 0; node_id < amount; node_id++) {
-			app = sink.Install (node.Get (node_id));
-			}
-			Time(1, 20);
+  void
+  setsentport ()
+  {
+    Ptr<Socket> source = Socket::CreateSocket (node.Get (48), tid);
+    InetSocketAddress remote = InetSocketAddress (Ipv4Address ("255.255.255.255"), 80);
+    source->SetAllowBroadcast (true);
+    source->Connect (remote);
+    OnOffHelper onoff ("ns3::UdpSocketFactory",
+                       Address (InetSocketAddress (Ipv4Address ("255.255.255.255"), 80)));
+    onoff.SetConstantRate (DataRate ("5kb/s"));
+    app.Add (onoff.Install (node.Get (49)));
+    time (1, 20);
+  }
 
-		}
-		static void CourseChange (std::string context, Ptr<const MobilityModel> mobility)
-		{
-		Vector pos = mobility->GetPosition ();
-		Vector vel = mobility->GetVelocity ();
-		std::cout << Simulator::Now () << ", model=" << mobility << ", POS: x=" << pos.x << ", y=" << pos.y
-					<< ", z=" << pos.z << "; VEL:" << vel.x << ", y=" << vel.y
-					<< ", z=" << vel.z << std::endl;
-		}
-		void Move(NodeContainer c, uint32_t node_id){	
-		// pos.SetTypeId ("ns3::RandomRectanglePositionAllocator");
-        // pos.Set ("X", StringValue ("ns3::UniformRandomVariable[Min=0.0|Max=100.0]"));
-        // pos.Set ("Y", StringValue ("ns3::UniformRandomVariable[Min=0.0|Max=100.0]"));
+  void
+  time (float start, float stop)
+  {
+    app.Start (Seconds (start));
+    app.Stop (Seconds (stop));
+  }
 
-        // Ptr<PositionAllocator> nowPosition = pos.Create ()->GetObject<PositionAllocator> ();
-        // streamIndex += nowPosition->AssignStreams (streamIndex);
+  void
+  setrecvport (int amount)
+  {
+    for (int n = 0; n < amount; n++)
+    {
+        Ptr<Socket> recvSink = Socket::CreateSocket (node.Get(n), tid);
+        InetSocketAddress local = InetSocketAddress (Ipv4Address::GetAny (), 80);
+        recvSink->Bind (local);
+        recvSink->SetRecvCallback(MakeCallback (&member::test, this));
+    }
+  }
+  static void
+  CourseChange (std::string context, Ptr<const MobilityModel> mobility)
+  {
+    Vector pos = mobility->GetPosition ();
+    Vector vel = mobility->GetVelocity ();
+    std::cout << Simulator::Now () << ", model=" << mobility << ", POS: x=" << pos.x
+              << ", y=" << pos.y << ", z=" << pos.z << "; VEL:" << vel.x << ", y=" << vel.y
+              << ", z=" << vel.z << std::endl;
+  }
+  void
+  setposition (NodeContainer c)
+  {
+    float x = 40;
+    float y = 13.5;
+    for (int col = 0; col < 6; col++)
+      {
+        for (int row = 0; row < 9; row++)
+          {
+            uint32_t node_id = (col * 9) + row;
 
-        // std::stringstream rSpeed;
-        // rSpeed << "ns3::UniformRandomVariable[Min=0.0|Max=" << nodeSpeed << "]";
-        // std::stringstream rPause;
-        // rPause << "ns3::ConstantRandomVariable[Constant=" << nodePause << "]";
-        // mobility.SetMobilityModel ("ns3::RandomWaypointMobilityModel",
-        //                           "Speed", StringValue (rSpeed.str ()),
-        //                           "Pause", StringValue (rPause.str ()),
-        //                           "PositionAllocator", PointerValue (nowPosition));
-        // mobility.SetPositionAllocator (nowPosition);
-        
- 
-        // mobility.SetPositionAllocator ("ns3::RandomBoxPositionAllocator",
-        // "X", StringValue ("ns3::UniformRandomVariable[Min=0|Max=108]"),
-        // "Y", StringValue ("ns3::UniformRandomVariable[Min=0|Max=160]"),
-        // "Z", StringValue ("ns3::UniformRandomVariable[Min=0|Max=100]"));
-        // mobility.Install (c.Get(node_id));
-        // streamIndex += mobility.AssignStreams (c, streamIndex);
-        // NS_UNUSED (streamIndex);
-		}
-		void Setposition(NodeContainer c){
-			float x = 4;
-			float y = 1.35;
-  			for (int col = 0; col < 6; col++) {
-				 	for (int row = 0; row < 9; row++){
-					uint32_t node_id = (col*9) + row;
-					
-					if(49 <= ((col*9)+row) ){
-						Addnode(c, 0.7, 5, node_id);
-						break;
-					}
-					else{
-						Addnode(c, x, y, node_id);
-						if((row+1) % 3 == 0){
-							y += 1.15;
-						}
-						else{
-							y += 0.8;
-						}
-					}
-				}
-				x += 1.5;
-				y = 1.35;
-			}
-			
-  			
-		}
-		void Addnode(NodeContainer c, float x, float y, uint32_t node_id){
-			Ptr<ListPositionAllocator> positionAlloc = CreateObject<ListPositionAllocator> ();
-  			positionAlloc->Add (Vector (x, y, 0.0));
-  			mobility.SetPositionAllocator (positionAlloc);
-            mobility.SetMobilityModel ("ns3::GaussMarkovMobilityModel",
-            "Bounds", BoxValue (Box (0, 10.8, 0, 16, 0, 10)),
-            "TimeStep", TimeValue (Seconds (0.5)),
-            "Alpha", DoubleValue (0.85),
-            "MeanVelocity", StringValue ("ns3::UniformRandomVariable[Min=1|Max=2]"),
-            "MeanDirection", StringValue ("ns3::UniformRandomVariable[Min=0|Max=3]"),
-            "MeanPitch", StringValue ("ns3::UniformRandomVariable[Min=0.05|Max=0.05]"),
-            "NormalVelocity", StringValue ("ns3::NormalRandomVariable[Mean=0.0|Variance=0.0|Bound=0.0]"),
-            "NormalDirection", StringValue ("ns3::NormalRandomVariable[Mean=0.0|Variance=0.2|Bound=0.4]"),
-            "NormalPitch", StringValue ("ns3::NormalRandomVariable[Mean=0.0|Variance=0.02|Bound=0.04]"));
-  			// mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
-  			mobility.Install (c.Get(node_id));
-		}
-		
-	uint16_t port = 9;
+            if (49 <= ((col * 9) + row))
+              {
+                addnode (c, 7, 50, node_id);
+                break;
+              }
+            else
+              {
+                addnode (c, x, y, node_id);
+                if ((row + 1) % 3 == 0)
+                  {
+                    y += 11.5;
+                  }
+                else
+                  {
+                    y += 8;
+                  }
+              }
+          }
+        x += 15;
+        y = 13.5;
+      }
+  }
+  void
+  addnode (NodeContainer c, float x, float y, uint32_t node_id)
+  {
+    mobility.SetMobilityModel ("ns3::WaypointMobilityModel");
+    mobility.Install (c.Get (node_id));
+    movetoline (c, node_id, x, y);
+  }
+  float
+  halfcircle (float num, float y)
+  {
+    return (137 - (sqrt (pow (5.0, 2.0) - pow (num - y, 2.0))));
+  }
+  void
+  movetoline (NodeContainer c, uint32_t node_id, float x, float y)
+  {
+    Ptr<WaypointMobilityModel> wayMobility;
+    wayMobility = c.Get (node_id)->GetObject<WaypointMobilityModel> ();
+    float before = x - 4;
+    float after = x + 4;
+    float num = rand() % 10;
+
+
+    //Instructor's move
+    if (node_id == 49)
+      {
+        move (wayMobility, 0.0, 5.9, x, y, x + 20, y+18);
+        move (wayMobility, 6, 9.9, x+20, y+18, 129, y+18);
+        move (wayMobility, 10, 12.5, 129, y+18, 129, y-30);
+        move (wayMobility, 12.6, 15, 129, y-30, 129, y+30);
+      }
+    //row1
+    else if (node_id % 9 == 0)
+      {
+        move (wayMobility, 0.0, 5.9, x, y, before, 2);
+        move (wayMobility, 6, 9.9, before, 2, 137, 2);
+        move (wayMobility, 10, 15, 137, 2, halfcircle (num + 5, 10.0), num + 5);
+      }
+    //row2
+    else if (node_id % 9 == 1)
+      {
+        move (wayMobility, 0.0, 5.9, x, y, x, 2);
+        move (wayMobility, 6, 9.9, x, 2, 137, 2);
+        move (wayMobility, 10, 15, 137, 2, halfcircle (num + 5, 10.0), num + 5);
+      }
+    //row3
+    else if (node_id % 9 == 2)
+      {
+        move (wayMobility, 0.0, 5.9, x, y, after, 37);
+        move (wayMobility, 6, 9.9, after, 37, 137, 37);
+        move (wayMobility, 10, 15, 137, 37, halfcircle (num + 19, 24.0), num + 19);
+      }
+    //row4
+    else if (node_id % 9 == 3)
+      {
+        move (wayMobility, 0.0, 5.9, x, y, before, 37);
+        move (wayMobility, 6, 9.9, before, 37, 137, 37);
+        move (wayMobility, 10, 15, 137, 37, halfcircle (num + 33, 38.0), num + 33);
+      }
+    //row5
+    else if (node_id % 9 == 4)
+      {
+        move (wayMobility, 0.0, 5.9, x, y, x, 37);
+        move (wayMobility, 6, 9.9, x, 37, 137, 37);
+        move (wayMobility, 10, 15, 137, 37, halfcircle (num + 33, 38.0), num + 33);
+      }
+    //row6
+    else if (node_id % 9 == 5)
+      {
+        move (wayMobility, 0.0, 5.9, x, y, after, 68);
+        move (wayMobility, 6, 9.9, after, 68, 137, 68);
+        move (wayMobility, 10, 15, 137, 68, halfcircle (num + 47, 52.0), num + 47);
+      }
+    //row7
+    else if (node_id % 9 == 6)
+      {
+        move (wayMobility, 0.0, 5.9, x, y, before, 68);
+        move (wayMobility, 6, 9.9, before, 68, 137, 68);
+        move (wayMobility, 10, 15, 137, 68, halfcircle (num + 71, 76.0), num + 71);
+      }
+    //row8
+    else if (node_id % 9 == 7)
+      {
+        move (wayMobility, 0.0, 5.9, x, y, x, 68);
+        move (wayMobility, 6, 9.9, x, 68, 137, 68);
+        move (wayMobility, 10, 15, 137, 68, halfcircle (num + 71, 76.0), num + 71);
+      }
+    //row9
+    else if (node_id % 9 == 8)
+      {
+        move (wayMobility, 0.0, 5.9, x, y, after, 97);
+        move (wayMobility, 6, 9.9, after, 97, 137, 97);
+        move (wayMobility, 10, 15, 137, 97, halfcircle (num + 85, 90.0), num + 85);
+      }
+  }
+  void
+  move (Ptr<WaypointMobilityModel> wayMobility, double time_str, double time_end, float x_str,
+        float y_str, float x_end, float y_end)
+  {
+    Waypoint waypointStart (Seconds (time_str), Vector3D (x_str, y_str, 0));
+    Waypoint waypointEnd (Seconds (time_end), Vector3D (x_end, y_end, 0));
+
+    wayMobility->AddWaypoint (waypointStart);
+    wayMobility->AddWaypoint (waypointEnd);
+  }
+
+  void
+  movetostayhere ()
+  {
+  }
+  uint16_t port = 9;
 };
 
+int
+main (int argc, char *argv[])
+{
+  member (50, 5000000, 2);
+  Simulator::Stop (Seconds (20.0));
+  AnimationInterface anim ("project_4.xml");
+  for (uint32_t i = 0; i < 50; i++)
+    {
+      anim.UpdateNodeSize (i, 2, 2);
+    }
 
-int main(int argc, char *argv[]){
-    member(50, 5000000, 2);
-	Simulator::Stop (Seconds (20.0));
-    AnimationInterface anim ("project_2.xml");
-    Simulator::Run ();
-    Simulator::Destroy ();
+  Simulator::Run ();
+  Simulator::Destroy ();
 }

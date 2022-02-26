@@ -197,7 +197,6 @@ public:
     wayMobility = c.Get (node_id)->GetObject<WaypointMobilityModel> ();
     float before = x - 4;
     float after = x + 4;
-    srand(time(NULL));
     float num = rand () % 10;
 
     //Instructor's Move

@@ -31,14 +31,14 @@ public:
     node.Create (amount);
     stack.Install (node);
     devices = csma.Install (node);
-    setip (nethost, netmask);
-    setcsma (datarate, delay);
-    setposition (node);
-    setrecvport(amount);
-    setsentport();
+    setIP (nethost, netmask);
+    setCSMA (datarate, delay);
+    setPosition (node);
+    setRecvPacket(amount);
+    setSentPacket();
     
   };
-  void test (Ptr<Socket> socket)
+  void RecvPacket (Ptr<Socket> socket)
 {
   while (socket->Recv ())
     {
@@ -46,7 +46,7 @@ public:
     }
 }
   void
-  setcsma (int datarate, int delay)
+  setCSMA (int datarate, int delay)
   {
     // set csma
     csma.SetChannelAttribute ("DataRate", DataRateValue (DataRate (datarate)));
@@ -54,7 +54,7 @@ public:
   }
 
   void
-  setip (string nethost, string netmask)
+  setIP (string nethost, string netmask)
   {
     // set IPV4
     address.SetBase (Ipv4Address (nethost.c_str ()), Ipv4Mask (netmask.c_str ()));
@@ -62,7 +62,7 @@ public:
   }
 
   void
-  setsentport ()
+  setSentPacket ()
   {
     Ptr<Socket> source = Socket::CreateSocket (node.Get (48), tid);
     InetSocketAddress remote = InetSocketAddress (Ipv4Address ("255.255.255.255"), 80);
@@ -72,25 +72,25 @@ public:
                        Address (InetSocketAddress (Ipv4Address ("255.255.255.255"), 80)));
     onoff.SetConstantRate (DataRate ("5kb/s"));
     app.Add (onoff.Install (node.Get (49)));
-    time (1, 20);
+    Time (1, 20);
   }
 
   void
-  time (float start, float stop)
+  Time (float start, float stop)
   {
     app.Start (Seconds (start));
     app.Stop (Seconds (stop));
   }
 
   void
-  setrecvport (int amount)
+  setRecvPacket (int amount)
   {
     for (int n = 0; n < amount; n++)
     {
         Ptr<Socket> recvSink = Socket::CreateSocket (node.Get(n), tid);
         InetSocketAddress local = InetSocketAddress (Ipv4Address::GetAny (), 80);
         recvSink->Bind (local);
-        recvSink->SetRecvCallback(MakeCallback (&member::test, this));
+        recvSink->SetRecvCallback(MakeCallback (&member::RecvPacket, this));
     }
   }
   static void
@@ -103,7 +103,7 @@ public:
               << ", z=" << vel.z << std::endl;
   }
   void
-  setposition (NodeContainer c)
+  setPosition (NodeContainer c)
   {
     float x = 40;
     float y = 13.5;
@@ -115,12 +115,12 @@ public:
 
             if (49 <= ((col * 9) + row))
               {
-                addnode (c, 7, 50, node_id);
+                AddNode (c, 7, 50, node_id);
                 break;
               }
             else
               {
-                addnode (c, x, y, node_id);
+                AddNode (c, x, y, node_id);
                 if ((row + 1) % 3 == 0)
                   {
                     y += 11.5;
@@ -136,11 +136,11 @@ public:
       }
   }
   void
-  addnode (NodeContainer c, float x, float y, uint32_t node_id)
+  AddNode (NodeContainer c, float x, float y, uint32_t node_id)
   {
     mobility.SetMobilityModel ("ns3::WaypointMobilityModel");
     mobility.Install (c.Get (node_id));
-    movetoline (c, node_id, x, y);
+    MovetoRack (c, node_id, x, y);
   }
   float
   halfcircle (float num, float y)
@@ -148,7 +148,7 @@ public:
     return (137 - (sqrt (pow (5.0, 2.0) - pow (num - y, 2.0))));
   }
   void
-  movetoline (NodeContainer c, uint32_t node_id, float x, float y)
+  MovetoRack (NodeContainer c, uint32_t node_id, float x, float y)
   {
     Ptr<WaypointMobilityModel> wayMobility;
     wayMobility = c.Get (node_id)->GetObject<WaypointMobilityModel> ();
@@ -157,80 +157,80 @@ public:
     float num = rand() % 10;
 
 
-    //Instructor's move
+    //Instructor's Move
     if (node_id == 49)
       {
-        move (wayMobility, 0.0, 5.9, x, y, x + 20, y+18);
-        move (wayMobility, 6, 9.9, x+20, y+18, 129, y+18);
-        move (wayMobility, 10, 12.5, 129, y+18, 129, y-30);
-        move (wayMobility, 12.6, 15, 129, y-30, 129, y+30);
+        Move (wayMobility, 0.0, 5.9, x, y, x + 20, y+18);
+        Move (wayMobility, 6, 9.9, x+20, y+18, 129, y+18);
+        Move (wayMobility, 10, 12.5, 129, y+18, 129, y-30);
+        Move (wayMobility, 12.6, 15, 129, y-30, 129, y+30);
       }
     //row1
     else if (node_id % 9 == 0)
       {
-        move (wayMobility, 0.0, 5.9, x, y, before, 2);
-        move (wayMobility, 6, 9.9, before, 2, 137, 2);
-        move (wayMobility, 10, 15, 137, 2, halfcircle (num + 5, 10.0), num + 5);
+        Move (wayMobility, 0.0, 5.9, x, y, before, 2);
+        Move (wayMobility, 6, 9.9, before, 2, 137, 2);
+        Move (wayMobility, 10, 15, 137, 2, halfcircle (num + 5, 10.0), num + 5);
       }
     //row2
     else if (node_id % 9 == 1)
       {
-        move (wayMobility, 0.0, 5.9, x, y, x, 2);
-        move (wayMobility, 6, 9.9, x, 2, 137, 2);
-        move (wayMobility, 10, 15, 137, 2, halfcircle (num + 5, 10.0), num + 5);
+        Move (wayMobility, 0.0, 5.9, x, y, x, 2);
+        Move (wayMobility, 6, 9.9, x, 2, 137, 2);
+        Move (wayMobility, 10, 15, 137, 2, halfcircle (num + 5, 10.0), num + 5);
       }
     //row3
     else if (node_id % 9 == 2)
       {
-        move (wayMobility, 0.0, 5.9, x, y, after, 37);
-        move (wayMobility, 6, 9.9, after, 37, 137, 37);
-        move (wayMobility, 10, 15, 137, 37, halfcircle (num + 19, 24.0), num + 19);
+        Move (wayMobility, 0.0, 5.9, x, y, after, 37);
+        Move (wayMobility, 6, 9.9, after, 37, 137, 37);
+        Move (wayMobility, 10, 15, 137, 37, halfcircle (num + 19, 24.0), num + 19);
       }
     //row4
     else if (node_id % 9 == 3)
       {
-        move (wayMobility, 0.0, 5.9, x, y, before, 37);
-        move (wayMobility, 6, 9.9, before, 37, 137, 37);
-        move (wayMobility, 10, 15, 137, 37, halfcircle (num + 33, 38.0), num + 33);
+        Move (wayMobility, 0.0, 5.9, x, y, before, 37);
+        Move (wayMobility, 6, 9.9, before, 37, 137, 37);
+        Move (wayMobility, 10, 15, 137, 37, halfcircle (num + 33, 38.0), num + 33);
       }
     //row5
     else if (node_id % 9 == 4)
       {
-        move (wayMobility, 0.0, 5.9, x, y, x, 37);
-        move (wayMobility, 6, 9.9, x, 37, 137, 37);
-        move (wayMobility, 10, 15, 137, 37, halfcircle (num + 33, 38.0), num + 33);
+        Move (wayMobility, 0.0, 5.9, x, y, x, 37);
+        Move (wayMobility, 6, 9.9, x, 37, 137, 37);
+        Move (wayMobility, 10, 15, 137, 37, halfcircle (num + 33, 38.0), num + 33);
       }
     //row6
     else if (node_id % 9 == 5)
       {
-        move (wayMobility, 0.0, 5.9, x, y, after, 68);
-        move (wayMobility, 6, 9.9, after, 68, 137, 68);
-        move (wayMobility, 10, 15, 137, 68, halfcircle (num + 47, 52.0), num + 47);
+        Move (wayMobility, 0.0, 5.9, x, y, after, 68);
+        Move (wayMobility, 6, 9.9, after, 68, 137, 68);
+        Move (wayMobility, 10, 15, 137, 68, halfcircle (num + 47, 52.0), num + 47);
       }
     //row7
     else if (node_id % 9 == 6)
       {
-        move (wayMobility, 0.0, 5.9, x, y, before, 68);
-        move (wayMobility, 6, 9.9, before, 68, 137, 68);
-        move (wayMobility, 10, 15, 137, 68, halfcircle (num + 71, 76.0), num + 71);
+        Move (wayMobility, 0.0, 5.9, x, y, before, 68);
+        Move (wayMobility, 6, 9.9, before, 68, 137, 68);
+        Move (wayMobility, 10, 15, 137, 68, halfcircle (num + 71, 76.0), num + 71);
       }
     //row8
     else if (node_id % 9 == 7)
       {
-        move (wayMobility, 0.0, 5.9, x, y, x, 68);
-        move (wayMobility, 6, 9.9, x, 68, 137, 68);
-        move (wayMobility, 10, 15, 137, 68, halfcircle (num + 71, 76.0), num + 71);
+        Move (wayMobility, 0.0, 5.9, x, y, x, 68);
+        Move (wayMobility, 6, 9.9, x, 68, 137, 68);
+        Move (wayMobility, 10, 15, 137, 68, halfcircle (num + 71, 76.0), num + 71);
       }
     //row9
     else if (node_id % 9 == 8)
       {
-        move (wayMobility, 0.0, 5.9, x, y, after, 97);
-        move (wayMobility, 6, 9.9, after, 97, 137, 97);
-        move (wayMobility, 10, 15, 137, 97, halfcircle (num + 85, 90.0), num + 85);
+        Move (wayMobility, 0.0, 5.9, x, y, after, 97);
+        Move (wayMobility, 6, 9.9, after, 97, 137, 97);
+        Move (wayMobility, 10, 15, 137, 97, halfcircle (num + 85, 90.0), num + 85);
       }
   }
   void
-  move (Ptr<WaypointMobilityModel> wayMobility, double time_str, double time_end, float x_str,
+  Move (Ptr<WaypointMobilityModel> wayMobility, double time_str, double time_end, float x_str,
         float y_str, float x_end, float y_end)
   {
     Waypoint waypointStart (Seconds (time_str), Vector3D (x_str, y_str, 0));
@@ -240,28 +240,6 @@ public:
     wayMobility->AddWaypoint (waypointEnd);
   }
 
-        // std::stringstream rSpeed;
-        // rSpeed << "ns3::UniformRandomVariable[Min=0.0|Max=" << nodeSpeed << "]";
-        // std::stringstream rPause;
-        // rPause << "ns3::ConstantRandomVariable[Constant=" << nodePause << "]";
-        // mobility.SetMobilityModel ("ns3::RandomWaypointMobilityModel",
-        //                           "Speed", StringValue (rSpeed.str ()),
-        //                           "Pause", StringValue (rPause.str ()),
-        //                           "PositionAllocator", PointerValue (nowPosition));
-        // mobility.SetPositionAllocator (nowPosition);
-        
- 
-        // mobility.SetPositionAllocator ("ns3::RandomBoxPositionAllocator",
-        // "X", StringValue ("ns3::UniformRandomVariable[Min=0|Max=108]"),
-        // "Y", StringValue ("ns3::UniformRandomVariable[Min=0|Max=160]"),
-        // "Z", StringValue ("ns3::UniformRandomVariable[Min=0|Max=100]"));
-        // mobility.Install (c.Get(node_id));
-        // streamIndex += mobility.AssignStreams (c, streamIndex);
-        // NS_UNUSED (streamIndex);
-		}
-		
-		
-		
 		void SetNodeData(int amount){
 			for (int node_id = 0; node_id < amount; node_id++) { 
 			    int dose = rand()%4; 

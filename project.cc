@@ -25,11 +25,12 @@ public:
   CsmaHelper csma;
   MobilityHelper mobility;
   TypeId tid = TypeId::LookupByName ("ns3::UdpSocketFactory");
-  struct memberAttribute{
-		int vaccine[3];
-		int mask_type;
-	}memberData[50];
-  
+  struct memberAttribute
+  {
+    int vaccine[3];
+    int mask_type;
+  } memberData[50];
+
   member (int amount, int datarate, int delay)
   {
     node.Create (amount);
@@ -38,17 +39,17 @@ public:
     setIP (nethost, netmask);
     setCSMA (datarate, delay);
     setPosition (node);
-    setRecvPacket(amount);
-    setSentPacket();
-    
+    setRecvPacket (amount);
+    setSentPacket ();
   };
-  void RecvPacket (Ptr<Socket> socket)
-{
-  while (socket->Recv ())
-    {
-      NS_LOG_UNCOND ("Received one packet!");
-    }
-}
+  void
+  RecvPacket (Ptr<Socket> socket)
+  {
+    while (socket->Recv ())
+      {
+        NS_LOG_UNCOND ("Received one packet!");
+      }
+  }
   void
   setCSMA (int datarate, int delay)
   {
@@ -90,12 +91,12 @@ public:
   setRecvPacket (int amount)
   {
     for (int n = 0; n < amount; n++)
-    {
-        Ptr<Socket> recvSink = Socket::CreateSocket (node.Get(n), tid);
+      {
+        Ptr<Socket> recvSink = Socket::CreateSocket (node.Get (n), tid);
         InetSocketAddress local = InetSocketAddress (Ipv4Address::GetAny (), 80);
         recvSink->Bind (local);
-        recvSink->SetRecvCallback(MakeCallback (&member::RecvPacket, this));
-    }
+        recvSink->SetRecvCallback (MakeCallback (&member::RecvPacket, this));
+      }
   }
   static void
   CourseChange (std::string context, Ptr<const MobilityModel> mobility)
@@ -145,6 +146,7 @@ public:
     mobility.SetMobilityModel ("ns3::WaypointMobilityModel");
     mobility.Install (c.Get (node_id));
     MovetoRack (c, node_id, x, y);
+    MoveBack (c, node_id, x, y);
   }
   float
   halfcircle (float num, float y)
@@ -158,16 +160,15 @@ public:
     wayMobility = c.Get (node_id)->GetObject<WaypointMobilityModel> ();
     float before = x - 4;
     float after = x + 4;
-    float num = rand() % 10;
-
+    float num = rand () % 10;
 
     //Instructor's Move
     if (node_id == 49)
       {
-        Move (wayMobility, 0.0, 5.9, x, y, x + 20, y+18);
-        Move (wayMobility, 6, 9.9, x+20, y+18, 129, y+18);
-        Move (wayMobility, 10, 12.5, 129, y+18, 129, y-30);
-        Move (wayMobility, 12.6, 15, 129, y-30, 129, y+30);
+        Move (wayMobility, 0.0, 5.9, x, y, x + 20, y + 18);
+        Move (wayMobility, 6, 9.9, x + 20, y + 18, 129, y + 18);
+        Move (wayMobility, 10, 12.5, 129, y + 18, 129, y - 30);
+        Move (wayMobility, 12.6, 15, 129, y - 30, 129, y + 30);
       }
     //row1
     else if (node_id % 9 == 0)
@@ -234,6 +235,76 @@ public:
       }
   }
   void
+  MoveBack (NodeContainer c, uint32_t node_id, float x, float y)
+  {
+    Ptr<WaypointMobilityModel> wayMobility;
+    wayMobility = c.Get (node_id)->GetObject<WaypointMobilityModel> ();
+    float before = x - 4;
+    float after = x + 4;
+
+    //Instructor's Move
+    if (node_id == 49)
+      {
+        Move (wayMobility, 20, 22.5, 129, y - 30, 129, y + 18);
+        Move (wayMobility, 22.6, 26.9, 129, y + 18, x + 20, y + 18);
+        Move (wayMobility, 27, 33, x + 20, y + 18, x, y);
+      }
+    //row1
+    else if (node_id % 9 == 0)
+      {
+        Move (wayMobility, 35.0, 39.9, 137, 2, before, 2);
+        Move (wayMobility, 40.0, 45.9, before, 2, x, y);
+      }
+    // //row2
+    else if (node_id % 9 == 1)
+      {
+        Move (wayMobility, 36.0, 40.9, 137, 2, x, 2);
+        Move (wayMobility, 41.0, 46.9, x, 2, x, y);
+      }
+    // //row3
+    else if (node_id % 9 == 2)
+      {
+        Move (wayMobility, 35.0, 39.9, 137, 37, after, 37);
+        Move (wayMobility, 40.0, 45.9, after, 37, x, y);
+      }
+    // //row4
+    else if (node_id % 9 == 3)
+      {
+        Move (wayMobility, 36.0, 40.9, 137, 37, before, 37);
+        Move (wayMobility, 41.0, 46.9, before, 37, x, y);
+      }
+    // //row5
+    else if (node_id % 9 == 4)
+      {
+        Move (wayMobility, 35.0, 39.9, 137, 37, x, 37);
+        Move (wayMobility, 40.0, 45.9, x, 37, x, y);
+      }
+    // //row6
+    else if (node_id % 9 == 5)
+      {
+        Move (wayMobility, 36.0, 40.9, 137, 68, after, 68);
+        Move (wayMobility, 41.0, 46.9, after, 68, x, y);
+      }
+    // //row7
+    else if (node_id % 9 == 6)
+      {
+        Move (wayMobility, 35.0, 39.9, 137, 68, before, 68);
+        Move (wayMobility, 40.0, 45.9, before, 68, x, y);
+      }
+    // //row8
+    else if (node_id % 9 == 7)
+      {
+        Move (wayMobility, 36.0, 40.9, 137, 68, x, 68);
+        Move (wayMobility, 41.0, 46.9, x, 68, x, y);
+      }
+    // //row9
+    else if (node_id % 9 == 8)
+      {
+        Move (wayMobility, 35.0, 39.9, 137, 97, after, 97);
+        Move (wayMobility, 40.0, 45.9, after, 97, x, y);
+      }
+  }
+  void
   Move (Ptr<WaypointMobilityModel> wayMobility, double time_str, double time_end, float x_str,
         float y_str, float x_end, float y_end)
   {
@@ -244,37 +315,47 @@ public:
     wayMobility->AddWaypoint (waypointEnd);
   }
 
-		void SetNodeData(int amount){
-			for (int node_id = 0; node_id < amount; node_id++) { 
-			    int dose = rand()%4; 
-				memberData[node_id].mask_type = rand()%3; 
-				int vaccine_type = rand()%4;
-				for (int each_dose = 0; each_dose < dose; each_dose++) { 
-					if(dose == 1){
-						if(vaccine_type == 2){
-							memberData[node_id].vaccine[each_dose] = vaccine_type + 1;
-						}
-					}else if(dose == 3){
-						if(vaccine_type == 3){
-							vaccine_type = rand() % 2;
-							memberData[node_id].vaccine[each_dose] = vaccine_type;
-						}
-					}else{
-						memberData[node_id].vaccine[each_dose] = vaccine_type;
-					}
-				}
-			}
+  void
+  SetNodeData (int amount)
+  {
+    for (int node_id = 0; node_id < amount; node_id++)
+      {
+        int dose = rand () % 4;
+        memberData[node_id].mask_type = rand () % 3;
+        int vaccine_type = rand () % 4;
+        for (int each_dose = 0; each_dose < dose; each_dose++)
+          {
+            if (dose == 1)
+              {
+                if (vaccine_type == 2)
+                  {
+                    memberData[node_id].vaccine[each_dose] = vaccine_type + 1;
+                  }
+              }
+            else if (dose == 3)
+              {
+                if (vaccine_type == 3)
+                  {
+                    vaccine_type = rand () % 2;
+                    memberData[node_id].vaccine[each_dose] = vaccine_type;
+                  }
+              }
+            else
+              {
+                memberData[node_id].vaccine[each_dose] = vaccine_type;
+              }
+          }
+      }
+  }
 
-		}
-		
-	uint16_t port = 9;
+  uint16_t port = 9;
 };
 
 int
 main (int argc, char *argv[])
 {
   member (50, 5000000, 2);
-  Simulator::Stop (Seconds (20.0));
+  Simulator::Stop (Seconds (60.0));
   AnimationInterface anim ("project_4.xml");
   for (uint32_t i = 0; i < 50; i++)
     {

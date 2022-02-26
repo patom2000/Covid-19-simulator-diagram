@@ -23,17 +23,18 @@ public:
   ApplicationContainer app;
   CsmaHelper csma;
   MobilityHelper mobility;
+  AnimationInterface *anim = 0;
   TypeId tid = TypeId::LookupByName ("ns3::UdpSocketFactory");
-  float maskdefrate[3] = {56, 67, 83}
+  int maskdefrate[3] = {560, 670, 830};
   struct memberAttribute
   {
-    int mask_type;
-	float infected_rate;
-	float get_covid_rate
+	  int infected_rate;
+	  int get_covid_rate;
   } memberData[50];
 
   member (int amount, int datarate, int delay)
   {
+    int random_inf = rand() % 50;
     node.Create (amount);
     stack.Install (node);
     devices = csma.Install (node);
@@ -41,15 +42,46 @@ public:
     setCSMA (datarate, delay);
     setPosition (node);
     setRecvPacket (amount);
-    setSentPacket ();
+    setSentPacket (random_inf);
+    SetNodeData(amount);
+    Simulator::Stop (Seconds (60.0));
+    anim = new AnimationInterface("project_6.xml");
+    anim->SetMaxPktsPerTraceFile (1000000);
+    for (uint32_t i = 0; i < 50; i++)
+      {
+        anim->UpdateNodeSize (i, 2, 2);
+      }
+
+    Simulator::Run ();
+    Simulator::Destroy ();
   };
   void
   RecvPacket (Ptr<Socket> socket)
   {
-    while (socket->Recv ())
+    if (socket->Recv ())
       {
-        NS_LOG_UNCOND ("Received one packet!");
+        // memberData[socket->GetNode()->GetId()].get_covid_rate;
+        int random = rand() % 1000 + 1;
+        if(random > memberData[socket->GetNode()->GetId()].get_covid_rate)
+        {
+          int random2 = rand() % 1000 +1;
+          if(random2 > memberData[socket->GetNode()->GetId()].infected_rate)
+          {
+            Ptr<MobilityModel> position = socket->GetNode()->GetObject<MobilityModel>();
+            Ptr<MobilityModel> position_infected = node.Get(49)->GetObject<MobilityModel>();
+            double position_inf_x = position_infected->GetPosition().x;
+            double position_inf_y = position_infected->GetPosition().y;
+            double position_x = position->GetPosition().x;
+            double position_y = position->GetPosition().y;
+            double distance = sqrt(abs((pow((position_inf_x - position_x),2.0)+pow((position_inf_y - position_y),2.0))));
+            if (distance < 20.0)
+            {
+              anim->UpdateNodeColor(socket->GetNode(), 255,0,255);
+            }           
+          }
+        }
       }
+    
   }
   void
   setCSMA (int datarate, int delay)
@@ -68,16 +100,16 @@ public:
   }
 
   void
-  setSentPacket ()
+  setSentPacket (int node_id)
   {
-    Ptr<Socket> source = Socket::CreateSocket (node.Get (48), tid);
+    Ptr<Socket> source = Socket::CreateSocket (node.Get (node_id), tid);
     InetSocketAddress remote = InetSocketAddress (Ipv4Address ("255.255.255.255"), 80);
     source->SetAllowBroadcast (true);
     source->Connect (remote);
     OnOffHelper onoff ("ns3::UdpSocketFactory",
                        Address (InetSocketAddress (Ipv4Address ("255.255.255.255"), 80)));
     onoff.SetConstantRate (DataRate ("5kb/s"));
-    app.Add (onoff.Install (node.Get (49)));
+    app.Add (onoff.Install (node.Get (node_id)));
     Time (1, 20);
   }
 
@@ -322,36 +354,36 @@ public:
     for (int node_id = 0; node_id < amount; node_id++)
       {
         int dose = rand () % 4;
-        memberData[node_id].get_covid_rate = maskdefrate[rand%3];
+        memberData[node_id].get_covid_rate = maskdefrate[rand()%3];
         int vaccine_type = rand () % 4;
 		if(dose == 1){
 			if (vaccine_type == 2 || vaccine_type == 3){
-				memberData[node_id].infected_rate = 43.9;
+				memberData[node_id].infected_rate = 439;
 			}else if(vaccine_type == 0){
-				memberData[node_id].infected_rate = 56.7;
+				memberData[node_id].infected_rate = 567;
 			}else if(vaccine_type == 1){
-				memberData[node_id].infected_rate = 72;
+				memberData[node_id].infected_rate = 720;
 			}
 		}else if(dose == 2){
 			if(vaccine_type == 0){
-				memberData[node_id].infected_rate = 82;
+				memberData[node_id].infected_rate = 820;
 			}else if(vaccine_type == 1){
-				memberData[node_id].infected_rate = 77.5;
+				memberData[node_id].infected_rate = 775;
 			}else if (vaccine_type == 2){
-				memberData[node_id].infected_rate = 59;
+				memberData[node_id].infected_rate = 590;
 			}else if(vaccine_type == 3){
-				memberData[node_id].infected_rate = 80.1;
+				memberData[node_id].infected_rate = 801;
 			}
 		}else if(dose == 3){
 			if(vaccine_type == 3){
-				vaccine_type == rand()%3;
+				vaccine_type = rand()%3;
 			}
 			if(vaccine_type == 0){
-				memberData[node_id].infected_rate = 97.2;
+				memberData[node_id].infected_rate = 972;
 			}else if(vaccine_type == 1){
-				memberData[node_id].infected_rate = 97;
+				memberData[node_id].infected_rate = 970;
 			}else if (vaccine_type == 2){
-				memberData[node_id].infected_rate = 63.8;
+				memberData[node_id].infected_rate = 638;
 			}
 		}
         
@@ -366,13 +398,4 @@ int
 main (int argc, char *argv[])
 {
   member (50, 5000000, 2);
-  Simulator::Stop (Seconds (60.0));
-  AnimationInterface anim ("project_4.xml");
-  for (uint32_t i = 0; i < 50; i++)
-    {
-      anim.UpdateNodeSize (i, 2, 2);
-    }
-
-  Simulator::Run ();
-  Simulator::Destroy ();
 }

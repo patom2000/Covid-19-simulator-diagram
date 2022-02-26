@@ -4,6 +4,7 @@
 #include "ns3/internet-module.h"
 #include "ns3/mobility-module.h"
 #include "ns3/netanim-module.h"
+#include <stdlib.h>
 
 using namespace ns3;
 using namespace std;
@@ -20,6 +21,10 @@ class member{
 	ApplicationContainer app;
 	CsmaHelper csma;
 	MobilityHelper mobility;
+	struct memberAttribute{
+		int vaccine[3];
+		int mask_type;
+	}memberData[50];
 	// int nodeSpeed = 20;
     // int nodePause = 0;
     // int64_t streamIndex = 0;
@@ -34,6 +39,7 @@ class member{
 			Setposition(node);
 			Setrecvport(amount);
 			Setsentport(amount);
+			SetNodeData(50);
 			
 			
     		 
@@ -70,6 +76,13 @@ class member{
 			}
 			Time(1, 20);
 
+		}
+		void ReceivePacket (Ptr<Socket> socket)
+		{
+			while (socket->Recv ())
+				{
+				NS_LOG_UNCOND ("Received one packet!");
+				}
 		}
 		static void CourseChange (std::string context, Ptr<const MobilityModel> mobility)
 		{
@@ -149,6 +162,29 @@ class member{
             "NormalPitch", StringValue ("ns3::NormalRandomVariable[Mean=0.0|Variance=0.02|Bound=0.04]"));
   			// mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
   			mobility.Install (c.Get(node_id));
+		}
+		
+		void SetNodeData(int amount){
+			for (int node_id = 0; node_id < amount; node_id++) { 
+			    int dose = rand()%4; 
+				memberData[node_id].mask_type = rand()%3; 
+				int vaccine_type = rand()%4;
+				for (int each_dose = 0; each_dose < dose; each_dose++) { 
+					if(dose == 1){
+						if(vaccine_type == 2){
+							memberData[node_id].vaccine[each_dose] = vaccine_type + 1;
+						}
+					}else if(dose == 3){
+						if(vaccine_type == 3){
+							vaccine_type = rand() % 2;
+							memberData[node_id].vaccine[each_dose] = vaccine_type;
+						}
+					}else{
+						memberData[node_id].vaccine[each_dose] = vaccine_type;
+					}
+				}
+			}
+
 		}
 		
 	uint16_t port = 9;

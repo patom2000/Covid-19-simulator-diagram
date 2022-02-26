@@ -6,7 +6,6 @@
 #include "ns3/netanim-module.h"
 #include <stdlib.h>
 #include <cmath>
-
 using namespace ns3;
 using namespace std;
 
@@ -25,10 +24,12 @@ public:
   CsmaHelper csma;
   MobilityHelper mobility;
   TypeId tid = TypeId::LookupByName ("ns3::UdpSocketFactory");
+  float maskdefrate[3] = {56, 67, 83}
   struct memberAttribute
   {
-    int vaccine[3];
     int mask_type;
+	float infected_rate;
+	float get_covid_rate
   } memberData[50];
 
   member (int amount, int datarate, int delay)
@@ -321,30 +322,40 @@ public:
     for (int node_id = 0; node_id < amount; node_id++)
       {
         int dose = rand () % 4;
-        memberData[node_id].mask_type = rand () % 3;
+        memberData[node_id].get_covid_rate = maskdefrate[rand%3];
         int vaccine_type = rand () % 4;
-        for (int each_dose = 0; each_dose < dose; each_dose++)
-          {
-            if (dose == 1)
-              {
-                if (vaccine_type == 2)
-                  {
-                    memberData[node_id].vaccine[each_dose] = vaccine_type + 1;
-                  }
-              }
-            else if (dose == 3)
-              {
-                if (vaccine_type == 3)
-                  {
-                    vaccine_type = rand () % 2;
-                    memberData[node_id].vaccine[each_dose] = vaccine_type;
-                  }
-              }
-            else
-              {
-                memberData[node_id].vaccine[each_dose] = vaccine_type;
-              }
-          }
+		if(dose == 1){
+			if (vaccine_type == 2 || vaccine_type == 3){
+				memberData[node_id].infected_rate = 43.9;
+			}else if(vaccine_type == 0){
+				memberData[node_id].infected_rate = 56.7;
+			}else if(vaccine_type == 1){
+				memberData[node_id].infected_rate = 72;
+			}
+		}else if(dose == 2){
+			if(vaccine_type == 0){
+				memberData[node_id].infected_rate = 82;
+			}else if(vaccine_type == 1){
+				memberData[node_id].infected_rate = 77.5;
+			}else if (vaccine_type == 2){
+				memberData[node_id].infected_rate = 59;
+			}else if(vaccine_type == 3){
+				memberData[node_id].infected_rate = 80.1;
+			}
+		}else if(dose == 3){
+			if(vaccine_type == 3){
+				vaccine_type == rand()%3;
+			}
+			if(vaccine_type == 0){
+				memberData[node_id].infected_rate = 97.2;
+			}else if(vaccine_type == 1){
+				memberData[node_id].infected_rate = 97;
+			}else if (vaccine_type == 2){
+				memberData[node_id].infected_rate = 63.8;
+			}
+		}
+        
+          
       }
   }
 

@@ -4,6 +4,8 @@
 #include "ns3/internet-module.h"
 #include "ns3/mobility-module.h"
 #include "ns3/netanim-module.h"
+#include <stdlib.h>
+#include <cmath>
 
 using namespace ns3;
 using namespace std;
@@ -22,11 +24,8 @@ public:
   ApplicationContainer app;
   CsmaHelper csma;
   MobilityHelper mobility;
-  // int nodeSpeed = 20;
-  // int nodePause = 0;
-  // int64_t streamIndex = 0;
-  // ObjectFactory pos;
-
+  TypeId tid = TypeId::LookupByName ("ns3::UdpSocketFactory");
+  
   member (int amount, int datarate, int delay)
   {
     node.Create (amount);
@@ -35,9 +34,17 @@ public:
     setip (nethost, netmask);
     setcsma (datarate, delay);
     setposition (node);
-    // setrecvport(amount);
-    // setsentport(amount);
+    setrecvport(amount);
+    setsentport();
+    
   };
+  void test (Ptr<Socket> socket)
+{
+  while (socket->Recv ())
+    {
+      NS_LOG_UNCOND ("Received one packet!");
+    }
+}
   void
   setcsma (int datarate, int delay)
   {
@@ -55,10 +62,14 @@ public:
   }
 
   void
-  setsentport (int amount)
+  setsentport ()
   {
+    Ptr<Socket> source = Socket::CreateSocket (node.Get (48), tid);
+    InetSocketAddress remote = InetSocketAddress (Ipv4Address ("255.255.255.255"), 80);
+    source->SetAllowBroadcast (true);
+    source->Connect (remote);
     OnOffHelper onoff ("ns3::UdpSocketFactory",
-                       Address (InetSocketAddress (Ipv4Address ("255.255.255.255"), port)));
+                       Address (InetSocketAddress (Ipv4Address ("255.255.255.255"), 80)));
     onoff.SetConstantRate (DataRate ("5kb/s"));
     app.Add (onoff.Install (node.Get (49)));
     time (1, 20);
@@ -74,13 +85,13 @@ public:
   void
   setrecvport (int amount)
   {
-    PacketSinkHelper sink ("ns3::UdpSocketFactory",
-                           Address (InetSocketAddress (Ipv4Address::GetAny (), port)));
-    for (int node_id = 0; node_id < amount; node_id++)
-      {
-        app = sink.Install (node.Get (node_id));
-      }
-    time (1, 20);
+    for (int n = 0; n < amount; n++)
+    {
+        Ptr<Socket> recvSink = Socket::CreateSocket (node.Get(n), tid);
+        InetSocketAddress local = InetSocketAddress (Ipv4Address::GetAny (), 80);
+        recvSink->Bind (local);
+        recvSink->SetRecvCallback(MakeCallback (&member::test, this));
+    }
   }
   static void
   CourseChange (std::string context, Ptr<const MobilityModel> mobility)
@@ -94,8 +105,8 @@ public:
   void
   setposition (NodeContainer c)
   {
-    float x = 4;
-    float y = 1.35;
+    float x = 40;
+    float y = 13.5;
     for (int col = 0; col < 6; col++)
       {
         for (int row = 0; row < 9; row++)
@@ -104,7 +115,7 @@ public:
 
             if (49 <= ((col * 9) + row))
               {
-                addnode (c, 0.7, 5, node_id);
+                addnode (c, 7, 50, node_id);
                 break;
               }
             else
@@ -112,16 +123,16 @@ public:
                 addnode (c, x, y, node_id);
                 if ((row + 1) % 3 == 0)
                   {
-                    y += 1.15;
+                    y += 11.5;
                   }
                 else
                   {
-                    y += 0.8;
+                    y += 8;
                   }
               }
           }
-        x += 1.5;
-        y = 1.35;
+        x += 15;
+        y = 13.5;
       }
   }
   void
@@ -129,75 +140,93 @@ public:
   {
     mobility.SetMobilityModel ("ns3::WaypointMobilityModel");
     mobility.Install (c.Get (node_id));
-    movetorackserver (c, node_id, x, y);
+    movetoline (c, node_id, x, y);
+  }
+  float
+  halfcircle (float num, float y)
+  {
+    return (137 - (sqrt (pow (5.0, 2.0) - pow (num - y, 2.0))));
   }
   void
-  movetorackserver (NodeContainer c, uint32_t node_id, float x, float y)
+  movetoline (NodeContainer c, uint32_t node_id, float x, float y)
   {
     Ptr<WaypointMobilityModel> wayMobility;
     wayMobility = c.Get (node_id)->GetObject<WaypointMobilityModel> ();
-	//row1
-    if (node_id % 9 == 0)
+    float before = x - 4;
+    float after = x + 4;
+    float num = rand() % 10;
+
+
+    //Instructor's move
+    if (node_id == 49)
       {
-        move (wayMobility, 0.0, 4.9, x, y, x, 0.2);
-        move (wayMobility, 6, 9.9, x, 0.2, 13.7, 0.2);
-        move (wayMobility, 10, 15, 13.7, 0.2, 13.7, 1);
+        move (wayMobility, 0.0, 5.9, x, y, x + 20, y+18);
+        move (wayMobility, 6, 9.9, x+20, y+18, 129, y+18);
+        move (wayMobility, 10, 12.5, 129, y+18, 129, y-30);
+        move (wayMobility, 12.6, 15, 129, y-30, 129, y+30);
       }
-	//row2
+    //row1
+    else if (node_id % 9 == 0)
+      {
+        move (wayMobility, 0.0, 5.9, x, y, before, 2);
+        move (wayMobility, 6, 9.9, before, 2, 137, 2);
+        move (wayMobility, 10, 15, 137, 2, halfcircle (num + 5, 10.0), num + 5);
+      }
+    //row2
     else if (node_id % 9 == 1)
       {
-        move (wayMobility, 0.0, 4.9, x, y, x, 0.2);
-        move (wayMobility, 6, 9.9, x, 0.2, 13.7, 0.2);
-        move (wayMobility, 10, 15, 13.7, 0.2, 13.7, 1);
+        move (wayMobility, 0.0, 5.9, x, y, x, 2);
+        move (wayMobility, 6, 9.9, x, 2, 137, 2);
+        move (wayMobility, 10, 15, 137, 2, halfcircle (num + 5, 10.0), num + 5);
       }
-	//row3
+    //row3
     else if (node_id % 9 == 2)
       {
-        move (wayMobility, 0.0, 4.9, x, y, x, 3.7);
-        move (wayMobility, 6, 9.9, x, 3.7, 13.7, 3.7);
-        move (wayMobility, 10, 15, 13.7, 3.7, 13.7, 2.4);
+        move (wayMobility, 0.0, 5.9, x, y, after, 37);
+        move (wayMobility, 6, 9.9, after, 37, 137, 37);
+        move (wayMobility, 10, 15, 137, 37, halfcircle (num + 19, 24.0), num + 19);
       }
-	//row4
+    //row4
     else if (node_id % 9 == 3)
       {
-        move (wayMobility, 0.0, 4.9, x, y, x, 3.7);
-        move (wayMobility, 6, 9.9, x, 3.7, 13.7, 3.7);
-        move (wayMobility, 10, 15, 13.7, 3.7, 13.7, 3.8);
+        move (wayMobility, 0.0, 5.9, x, y, before, 37);
+        move (wayMobility, 6, 9.9, before, 37, 137, 37);
+        move (wayMobility, 10, 15, 137, 37, halfcircle (num + 33, 38.0), num + 33);
       }
-	//row5
+    //row5
     else if (node_id % 9 == 4)
       {
-        move (wayMobility, 0.0, 4.9, x, y, x, 3.7);
-        move (wayMobility, 6, 9.9, x, 3.7, 13.7, 3.7);
-        move (wayMobility, 10, 15, 13.7, 3.7, 13.7, 3.8);
+        move (wayMobility, 0.0, 5.9, x, y, x, 37);
+        move (wayMobility, 6, 9.9, x, 37, 137, 37);
+        move (wayMobility, 10, 15, 137, 37, halfcircle (num + 33, 38.0), num + 33);
       }
-	//row6
+    //row6
     else if (node_id % 9 == 5)
       {
-        move (wayMobility, 0.0, 4.9, x, y, x, 6.8);
-        move (wayMobility, 6, 9.9, x, 6.8, 13.7, 6.8);
-        move (wayMobility, 10, 15, 13.7, 6.8, 13.7, 5.2);
+        move (wayMobility, 0.0, 5.9, x, y, after, 68);
+        move (wayMobility, 6, 9.9, after, 68, 137, 68);
+        move (wayMobility, 10, 15, 137, 68, halfcircle (num + 47, 52.0), num + 47);
       }
-	//row7
+    //row7
     else if (node_id % 9 == 6)
       {
-        move (wayMobility, 0.0, 4.9, x, y, x, 6.8);
-        move (wayMobility, 6, 9.9, x, 6.8, 13.7, 6.8);
-        move (wayMobility, 10, 15, 13.7, 6.8, 13.7, 7.6);
+        move (wayMobility, 0.0, 5.9, x, y, before, 68);
+        move (wayMobility, 6, 9.9, before, 68, 137, 68);
+        move (wayMobility, 10, 15, 137, 68, halfcircle (num + 71, 76.0), num + 71);
       }
-	//row8
+    //row8
     else if (node_id % 9 == 7)
       {
-        move (wayMobility, 0.0, 4.9, x, y, x, 6.8);
-        move (wayMobility, 6, 9.9, x, 6.8, 13.7, 6.8);
-        move (wayMobility, 10, 15, 13.7, 6.8, 13.7, 7.6);
+        move (wayMobility, 0.0, 5.9, x, y, x, 68);
+        move (wayMobility, 6, 9.9, x, 68, 137, 68);
+        move (wayMobility, 10, 15, 137, 68, halfcircle (num + 71, 76.0), num + 71);
       }
-	//row9
+    //row9
     else if (node_id % 9 == 8)
       {
-        move (wayMobility, 0.0, 4.9, x, y, x, 9.7);
-        move (wayMobility, 6, 9.9, x, 9.7, 13.7, 9.7);
-        move (wayMobility, 10, 15, 13.7, 9.7, 13.7, 8);
+        move (wayMobility, 0.0, 5.9, x, y, after, 97);
+        move (wayMobility, 6, 9.9, after, 97, 137, 97);
+        move (wayMobility, 10, 15, 137, 97, halfcircle (num + 85, 90.0), num + 85);
       }
   }
   void
@@ -223,10 +252,10 @@ main (int argc, char *argv[])
 {
   member (50, 5000000, 2);
   Simulator::Stop (Seconds (20.0));
-  AnimationInterface anim ("project_2.xml");
+  AnimationInterface anim ("project_4.xml");
   for (uint32_t i = 0; i < 50; i++)
     {
-      anim.UpdateNodeSize (i, 0.2, 0.2);
+      anim.UpdateNodeSize (i, 2, 2);
     }
 
   Simulator::Run ();

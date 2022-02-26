@@ -24,6 +24,7 @@ public:
   CsmaHelper csma;
   MobilityHelper mobility;
   AnimationInterface *anim = 0;
+  int random_inf;
   TypeId tid = TypeId::LookupByName ("ns3::UdpSocketFactory");
   int maskdefrate[3] = {560, 670, 830};
   struct memberAttribute
@@ -34,23 +35,26 @@ public:
 
   member (int amount, int datarate, int delay)
   {
-    int random_inf = rand() % 50;
+    srand(time(NULL));
+    random_inf = rand() % 50;
     node.Create (amount);
     stack.Install (node);
     devices = csma.Install (node);
     setIP (nethost, netmask);
     setCSMA (datarate, delay);
     setPosition (node);
-    setRecvPacket (amount);
     setSentPacket (random_inf);
+    setRecvPacket (amount);
     SetNodeData(amount);
     Simulator::Stop (Seconds (60.0));
     anim = new AnimationInterface("project_6.xml");
     anim->SetMaxPktsPerTraceFile (1000000);
     for (uint32_t i = 0; i < 50; i++)
       {
+        anim->UpdateNodeColor(node.Get(i), 0,0,255);
         anim->UpdateNodeSize (i, 2, 2);
       }
+    anim->UpdateNodeColor(node.Get(random_inf), 255,0,0);
 
     Simulator::Run ();
     Simulator::Destroy ();
@@ -60,7 +64,6 @@ public:
   {
     if (socket->Recv ())
       {
-        // memberData[socket->GetNode()->GetId()].get_covid_rate;
         int random = rand() % 1000 + 1;
         if(random > memberData[socket->GetNode()->GetId()].get_covid_rate)
         {
@@ -68,7 +71,7 @@ public:
           if(random2 > memberData[socket->GetNode()->GetId()].infected_rate)
           {
             Ptr<MobilityModel> position = socket->GetNode()->GetObject<MobilityModel>();
-            Ptr<MobilityModel> position_infected = node.Get(49)->GetObject<MobilityModel>();
+            Ptr<MobilityModel> position_infected = node.Get(random_inf)->GetObject<MobilityModel>();
             double position_inf_x = position_infected->GetPosition().x;
             double position_inf_y = position_infected->GetPosition().y;
             double position_x = position->GetPosition().x;
@@ -76,7 +79,7 @@ public:
             double distance = sqrt(abs((pow((position_inf_x - position_x),2.0)+pow((position_inf_y - position_y),2.0))));
             if (distance < 20.0)
             {
-              anim->UpdateNodeColor(socket->GetNode(), 255,0,255);
+              anim->UpdateNodeColor(socket->GetNode(), 255,255,0);
             }           
           }
         }
@@ -129,6 +132,7 @@ public:
         InetSocketAddress local = InetSocketAddress (Ipv4Address::GetAny (), 80);
         recvSink->Bind (local);
         recvSink->SetRecvCallback (MakeCallback (&member::RecvPacket, this));
+        
       }
   }
   static void

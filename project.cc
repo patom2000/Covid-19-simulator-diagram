@@ -63,7 +63,7 @@ public:
   RecvPacket (Ptr<Socket> socket)
   {
     if (socket->Recv ())
-      {
+      {srand(time(NULL));       
         int random = rand() % 1000 + 1;
         if(random > memberData[socket->GetNode()->GetId()].get_covid_rate)
         {
@@ -197,6 +197,7 @@ public:
     wayMobility = c.Get (node_id)->GetObject<WaypointMobilityModel> ();
     float before = x - 4;
     float after = x + 4;
+    srand(time(NULL));
     float num = rand () % 10;
 
     //Instructor's Move
@@ -355,6 +356,7 @@ public:
   void
   SetNodeData (int amount)
   {
+    srand(time(NULL));
     for (int node_id = 0; node_id < amount; node_id++)
       {
         int dose = rand () % 4;

@@ -25,6 +25,10 @@ public:
   CsmaHelper csma;
   MobilityHelper mobility;
   TypeId tid = TypeId::LookupByName ("ns3::UdpSocketFactory");
+  struct memberAttribute{
+		int vaccine[3];
+		int mask_type;
+	}memberData[50];
   
   member (int amount, int datarate, int delay)
   {
